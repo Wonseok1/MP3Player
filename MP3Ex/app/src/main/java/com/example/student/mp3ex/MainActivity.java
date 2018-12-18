@@ -11,7 +11,10 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ListView;
 
 import java.io.File;
 import java.io.IOException;
@@ -22,23 +25,24 @@ public class MainActivity extends AppCompatActivity {
     boolean bWritePerm = false;
     Button button_play, button_stop, button_next, button_prev;
     MediaPlayer player;
+    ListView music_listview;
 
-    String mp3;
-    int i=0;
-    ArrayList<String> mp3List;
-    String musicPath = Environment.getExternalStorageDirectory().getAbsolutePath()+"/";
+    String mp3; //상세파일명
+    int i=0; //리스트[i]
+    ArrayList<String> mp3List; //sd카드에서 검색된 mp3리스트
+    String musicPath = Environment.getExternalStorageDirectory().getAbsolutePath()+"/";//경로
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
         setPermission();
 
         button_play = (Button)findViewById(R.id.button_play);
         button_stop = (Button)findViewById(R.id.button_stop);
         button_next = findViewById(R.id.button_next);
         button_prev = findViewById(R.id.button_prev);
+        music_listview = findViewById(R.id.music_listview);
 
         button_play.setOnClickListener(new MyButtonListener());
         button_stop.setOnClickListener(new MyButtonListener());
@@ -47,10 +51,10 @@ public class MainActivity extends AppCompatActivity {
 
         player = new MediaPlayer();
 
+
         File[] listFiles = new File(musicPath).listFiles();
         String fileName, extName;
         mp3List = new ArrayList<String>();
-
 
         //sd카드의 mp3파일 리스트에 저장
         for (File file : listFiles) {
@@ -61,8 +65,20 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_single_choice, mp3List);
+        music_listview.setAdapter(adapter);
+        music_listview.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
+        music_listview.setItemChecked(i,true);
+        music_listview.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                mp3 = mp3List.get(position);
+            }
+        });
+
         mp3 = mp3List.get(i);
 
+        // 퍼미션 허가 되었을시
         if(bReadPerm && bWritePerm) {
             String state = Environment.getExternalStorageState();
 
@@ -92,14 +108,17 @@ public class MainActivity extends AppCompatActivity {
                         button_play.setText("pause");
                     }
                     break;
+
                 case R.id.button_stop:
                     player.stop();
+                    button_play.setText("play");
                     try {
                         player.prepare();
                     } catch (Exception e) {
                         Log.d("PlayMp3", "mp3 file error");
                     }
                     break;
+
                 case R.id.button_next:
                     player.stop();
                     i++;
@@ -108,13 +127,12 @@ public class MainActivity extends AppCompatActivity {
                         i=0;
                     }
                     mp3 = mp3List.get(i).toString();
+                    music_listview.setItemChecked(i,true);
                     try {
                         player.setDataSource(musicPath + mp3);
                         player.prepare();
                     } catch (IOException e) {
-
                     }
-
                     player.start();
                     break;
 
@@ -127,6 +145,7 @@ public class MainActivity extends AppCompatActivity {
                     }
 
                     mp3 = mp3List.get(i).toString();
+                    music_listview.setItemChecked(i,true);
                     try {
                         player.setDataSource(musicPath + mp3);
                         player.prepare();
