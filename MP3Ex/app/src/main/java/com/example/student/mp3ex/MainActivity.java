@@ -1,6 +1,10 @@
 package com.example.student.mp3ex;
 
 import android.Manifest;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.media.MediaPlayer;
 import android.os.Environment;
@@ -21,16 +25,18 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
-    boolean bReadPerm = false;
-    boolean bWritePerm = false;
+    boolean bReadPerm = false; // sd카드 읽기 여부
+    boolean bWritePerm = false; // sd카드 쓰기 여부
     Button button_play, button_stop, button_next, button_prev;
-    MediaPlayer player;
+    /*MediaPlayer player;*/
     ListView music_listview;
 
     String mp3; //상세파일명
     int i=0; //리스트[i]
     ArrayList<String> mp3List; //sd카드에서 검색된 mp3리스트
     String musicPath = Environment.getExternalStorageDirectory().getAbsolutePath()+"/";//경로
+    Boolean bStatePlay = false; //재생상태 유뮤
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,7 +55,10 @@ public class MainActivity extends AppCompatActivity {
         button_next.setOnClickListener(new MyButtonListener());
         button_prev.setOnClickListener(new MyButtonListener());
 
-        player = new MediaPlayer();
+        /*player = new MediaPlayer();*/
+
+        //리시버등록(서비스와 통신)
+        registerReceiver(receiver, new IntentFilter("com.example.student.mp3ex"));
 
 
         File[] listFiles = new File(musicPath).listFiles();
@@ -84,43 +93,81 @@ public class MainActivity extends AppCompatActivity {
 
             if (state.equals(Environment.MEDIA_MOUNTED)) {
                 try {
-                    player.setDataSource(musicPath+mp3);
+                    Intent intent = new Intent(MainActivity.this, MusicService.class);
+                    intent.putExtra("fullPath", musicPath + mp3); //권한 허가시 인텐트로 서비스에 파일 경로 정보 전달
+                    startService(intent);
+
+                    /*player.setDataSource(musicPath+mp3);
                     player.prepare();
-                    Log.d("PlayMp3", "mp3 file ");
+                    Log.d("PlayMp3", "mp3 file ");*/
                 } catch (Exception e) {
-                    Log.d("PlayMp3", "mp3 file error");
+                   /* Log.d("PlayMp3", "mp3 file error");*/
+                   e.printStackTrace();
                 }
             }
         }
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        unregisterReceiver(receiver);
+    }
+
+    BroadcastReceiver receiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String state = intent.getStringExtra("state");
+
+            if (state != null) {
+                if (state.equals("play")) {
+                    bStatePlay = true;
+                    button_play.setText("pause");
+
+                } else if (state.equals("pause") || state.equals("stop")) {
+                    bStatePlay = false;
+                    button_play.setText("play");
+                }
+            }
+        }
+    };
+
     class MyButtonListener implements View.OnClickListener {
+
 
         @Override
         public void onClick(View view) {
+            Intent intent = new Intent("com.example.student.mp3ex");
+
             switch(view.getId()) {
                 case R.id.button_play:
-                    if(player.isPlaying()) {
+                    if (bStatePlay) {
+                        intent.putExtra("btn", "pause");
+                    } else {
+                        intent.putExtra("btn", "play");
+                    }
+                    /*if(player.isPlaying()) {
                         player.pause();
                         button_play.setText("play");
                     } else {
                         player.start();
                         button_play.setText("pause");
-                    }
+                    }*/
                     break;
 
                 case R.id.button_stop:
-                    player.stop();
+                    intent.putExtra("btn", "stop");
+                    /*player.stop();
                     button_play.setText("play");
                     try {
                         player.prepare();
                     } catch (Exception e) {
                         Log.d("PlayMp3", "mp3 file error");
-                    }
+                    }*/
                     break;
 
                 case R.id.button_next:
-                    player.stop();
+                   /* player.stop();
                     i++;
                     player.reset();
                     if (i > mp3List.size()-1) {
@@ -133,11 +180,11 @@ public class MainActivity extends AppCompatActivity {
                         player.prepare();
                     } catch (IOException e) {
                     }
-                    player.start();
+                    player.start();*/
                     break;
 
                 case R.id.button_prev :
-                    player.stop();
+                   /* player.stop();
                     i--;
                     player.reset();
                     if (i < 0) {
@@ -153,9 +200,10 @@ public class MainActivity extends AppCompatActivity {
 
                     }
 
-                    player.start();
+                    player.start();*/
                     break;
             }
+            sendBroadcast(intent);
         }
     }
 
