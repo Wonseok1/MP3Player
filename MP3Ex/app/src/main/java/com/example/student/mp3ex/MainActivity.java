@@ -38,6 +38,25 @@ public class MainActivity extends AppCompatActivity {
     Boolean bStatePlay = false; //재생상태 유뮤
 
 
+    BroadcastReceiver receiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String state = intent.getStringExtra("state");
+
+            if (state != null) {
+                if (state.equals("play")) {
+                    bStatePlay = true;
+                    button_play.setText("pause");
+
+                } else if (state.equals("pause") || state.equals("stop")) {
+                    bStatePlay = false;
+                    button_play.setText("play");
+                }
+            }
+        }
+    };
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -74,6 +93,8 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
+        mp3 = mp3List.get(i);
+
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_single_choice, mp3List);
         music_listview.setAdapter(adapter);
         music_listview.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
@@ -81,11 +102,15 @@ public class MainActivity extends AppCompatActivity {
         music_listview.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                Intent intent = new Intent("com.example.student.mp3ex");
+                intent.putExtra("btn", "stop");
                 mp3 = mp3List.get(position);
+                intent.putExtra("fullPath", musicPath + mp3);
+                intent.putExtra("btn", "play");
+
             }
         });
 
-        mp3 = mp3List.get(i);
 
         // 퍼미션 허가 되었을시
         if(bReadPerm && bWritePerm) {
@@ -114,23 +139,7 @@ public class MainActivity extends AppCompatActivity {
         unregisterReceiver(receiver);
     }
 
-    BroadcastReceiver receiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            String state = intent.getStringExtra("state");
 
-            if (state != null) {
-                if (state.equals("play")) {
-                    bStatePlay = true;
-                    button_play.setText("pause");
-
-                } else if (state.equals("pause") || state.equals("stop")) {
-                    bStatePlay = false;
-                    button_play.setText("play");
-                }
-            }
-        }
-    };
 
     class MyButtonListener implements View.OnClickListener {
 

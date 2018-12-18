@@ -37,6 +37,7 @@ public class MusicService extends Service {
                     player.stop();
                     try {
                         intent1.putExtra("state", "stop");
+                        player.stop();
                         player.prepare();
                     } catch (Exception e) {
                         e.printStackTrace();
